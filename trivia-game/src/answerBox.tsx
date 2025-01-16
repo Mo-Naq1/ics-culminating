@@ -7,8 +7,8 @@ interface AnswerBoxProps {
 function AnswerBox({ question, colour, onClick }: AnswerBoxProps) {
     return (
         <div  
-            className={`border answercontainer border-${colour} hover:bg-${colour}`} 
-            onClick={onClick}
+            className={`border answercontainer cursor-pointer border-${colour} hover:bg-${colour}`} 
+            onClick={onClick} //feature for tracking if the answer is correct or not
         >
             <h1>{question}</h1>
         </div>
