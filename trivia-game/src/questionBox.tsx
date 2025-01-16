@@ -1,7 +1,12 @@
-function QuestionBox () {
+interface QuestionBoxProps {
+    question: string;
+}
+
+
+function QuestionBox ({ question }: QuestionBoxProps) {
     return (
-        <div className=''>
-            <h1>Question 1</h1>
+        <div>
+            <h1>{question}</h1>
         </div>
     )
 }
