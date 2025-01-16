@@ -5,21 +5,22 @@ import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 function App() {
-  const [score, setScore] = useState(10);
+  const [score, setScore] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Track current question index
   const [questions, setQuestions] = useState<any[]>([]); // Store all questions
   const [isLoading, setIsLoading] = useState(true); // Show a loader during fetching
-
+  const [gameover, setGameOver] = useState('');
+  const numberOfQuestions = 10;
   const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
   const fetchAIContent = async () => {
     setIsLoading(true);
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
       const prompt = `
-        Generate 10 structured JSON responses with trivia questions. Each should have 4 possible answers, with only one being correct. Generate unique ones each time. 
+        Generate 10 structured JSON responses with trivia questions. Never reuse questions. Each should have 4 possible answers, with only one being correct. Generate unique ones each time. 
         The output should be an array following this schema:
         [
           {
@@ -48,8 +49,8 @@ function App() {
           },
         ],
         generationConfig: {
-          maxOutputTokens: 3000, // Higher to handle multiple questions
-          temperature: 0.1,
+          maxOutputTokens: 8964, // Higher to handle multiple questions
+          temperature: 1.0,
         },
       });
 
@@ -70,13 +71,13 @@ function App() {
   }, []);
 
   const handleAnswerClick = (correct: boolean) => {
-    if (!correct) setScore((prev) => prev - 1);
+    if (correct) setScore((prev) => prev  + 1);
 
     // Move to the next question
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      alert("Quiz complete!"); // Or handle end of quiz logic
+      setGameOver("end");
     }
     console.log(score);
     console.log(questions);
@@ -100,7 +101,14 @@ function App() {
 
   const isTrue: boolean =
     questions[currentQuestionIndex].response.answers[0].correct === true;
-
+if (gameover === "end") {
+    return (
+      <div className="mt-10 text-5xl font-extrabold text-center">
+        <div>Game Over</div>
+        <div className="mt-5">Your final score is {score}/10</div>
+      </div>
+    );
+  }
   return (
     <>
       <div className="mt-10 text-5xl font-extrabold text-center">
@@ -156,6 +164,7 @@ function App() {
             }
           />
         </div>
+        <div>Score {score}</div>
       </div>
     </>
   );
