@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 function Button() {
+    
     return (
         <div>
             <Link to="/home">Go to Home</Link>
@@ -10,3 +11,5 @@ function Button() {
 }
 
 export default Button;
+
+
