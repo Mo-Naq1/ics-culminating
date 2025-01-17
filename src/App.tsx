@@ -1,13 +1,22 @@
 import "./App.css";
 import AnswerBox from "./answerBox";
 import QuestionBox from "./questionBox";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+type QuizResponse = {
+  response: {
+    question: string;
+    answers: {
+      text: string;
+      correct: boolean;
+    }[];
+  };
+}[];
 function App() {
   const [score, setScore] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QuizResponse>([]);
   const [isLoading, setIsLoading] = useState(false); 
   const [gameover, setGameOver] = useState("intro");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number | undefined>(undefined);
