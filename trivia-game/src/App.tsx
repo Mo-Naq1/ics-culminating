@@ -6,11 +6,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 function App() {
   const [score, setScore] = useState(0);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Track current question index
-  const [questions, setQuestions] = useState<any[]>([]); // Store all questions
-  const [isLoading, setIsLoading] = useState(true); // Show a loader during fetching
-  const [gameover, setGameOver] = useState('');
-  const numberOfQuestions = 10;
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false); 
+  const [gameover, setGameOver] = useState("intro");
+  const [numberOfQuestions, setNumberOfQuestions] = useState<number | undefined>(undefined);
+  const [topic, setTopic] = useState("General");
+  const [difficulty, setDifficulty] = useState("easy");
   const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
   const fetchAIContent = async () => {
@@ -20,7 +22,8 @@ function App() {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
       const prompt = `
-        Generate 10 structured JSON responses with trivia questions. Never reuse questions. Each should have 4 possible answers, with only one being correct. Generate unique ones each time. 
+        Generate ${numberOfQuestions} structured JSON responses with ${difficulty} trivia questions related to the topic: ${topic}.
+        Each should have 4 possible answers, with only one being correct. Generate unique ones each time.
         The output should be an array following this schema:
         [
           {
@@ -41,24 +44,20 @@ function App() {
         contents: [
           {
             role: "user",
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
+            parts: [{ text: prompt }],
           },
         ],
         generationConfig: {
-          maxOutputTokens: 8964, // Higher to handle multiple questions
-          temperature: 1.0,
+          maxOutputTokens: 8964,
+          temperature: 0.7,
         },
       });
 
       const rawText = response.response.text();
       const cleanedText = rawText.replace(/```json|```/g, "").trim();
-      const parsedQuestions = JSON.parse(cleanedText); // Parse all 10 questions
+      const parsedQuestions = JSON.parse(cleanedText);
 
-      setQuestions(parsedQuestions); // Save questions to state
+      setQuestions(parsedQuestions);
     } catch (error) {
       console.error("Error fetching or parsing AI content:", error);
     } finally {
@@ -66,49 +65,80 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    fetchAIContent();
-  }, []);
-
   const handleAnswerClick = (correct: boolean) => {
-    if (correct) setScore((prev) => prev  + 1);
+    if (correct) setScore((prev) => prev + 1);
 
-    // Move to the next question
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
       setGameOver("end");
     }
-    console.log(score);
-    console.log(questions);
   };
+
+  if (gameover === "intro") {
+    return (
+      <div className="flex flex-col items-center overflow-hidden justify-center h-screen">
+        <div className="text-5xl font-extrabold text-center mb-10">
+          <div>Mo' Trivia</div>
+          <div className="mt-5">Mo' Problems</div>
+        </div>
+        <div className="flex flex-col items-center space-y-4">
+          <input
+            type="number"
+            placeholder="Number of Questions"
+            value={numberOfQuestions}
+            onChange={(e) => setNumberOfQuestions(Number(e.target.value))}
+            className="p-2 border border-gray-300 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="p-2 border border-gray-300 rounded"
+          />
+          <select
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value)}
+            className="p-2 border border-gray-300 rounded"
+          >
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+          <button
+            onClick={() => {
+              setGameOver("start");
+              fetchAIContent();
+            }}
+            className="p-2 bg-blue-500 text-white rounded"
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
-      <div className="text-5xl text-slate-200 font-extrabold itali">
+      <div className="text-5xl text-slate-200 font-extrabold italic">
         <i>Loading questions...</i>
       </div>
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const options = new Map<string, boolean>(
-    currentQuestion.response.answers.map((answer: any) => [
-      answer.text,
-      answer.correct,
-    ])
-  );
-
-  const isTrue: boolean =
-    questions[currentQuestionIndex].response.answers[0].correct === true;
-if (gameover === "end") {
+  if (gameover === "end") {
     return (
       <div className="mt-10 text-5xl font-extrabold text-center">
         <div>Game Over</div>
-        <div className="mt-5">Your final score is {score}/10</div>
+        <div className="mt-5">Your final score is {score}/{numberOfQuestions}</div>
       </div>
     );
   }
+
+  const currentQuestion = questions[currentQuestionIndex];
+
   return (
     <>
       <div className="mt-10 text-5xl font-extrabold text-center">
@@ -116,7 +146,7 @@ if (gameover === "end") {
         <div className="mt-5">Mo' Problems</div>
       </div>
       <div className="flex flex-col h-[79vh] pb-16">
-        <div className="mt-32 text-left text-xl w-36  ml-5">
+        <div className="mt-32 text-left text-xl w-36 ml-5">
           Question {currentQuestionIndex + 1}
         </div>
         <div className="flex questioncontainer justify-center text-2xl items-center">
@@ -125,46 +155,42 @@ if (gameover === "end") {
         <div className="grid grid-cols-2 items-center justify-center">
           <AnswerBox
             colour="red-400"
-            question={questions[currentQuestionIndex].response.answers[0].text}
+            question={currentQuestion.response.answers[0]?.text || ""}
             onClick={() =>
               handleAnswerClick(
-                questions[currentQuestionIndex].response.answers[0].correct ===
-                  true
+                currentQuestion.response.answers[0]?.correct === true
               )
             }
           />
           <AnswerBox
             colour="yellow-400"
-            question={questions[currentQuestionIndex].response.answers[1].text}
+            question={currentQuestion.response.answers[1]?.text || ""}
             onClick={() =>
               handleAnswerClick(
-                questions[currentQuestionIndex].response.answers[1].correct ===
-                  true
+                currentQuestion.response.answers[1]?.correct === true
               )
             }
           />
           <AnswerBox
             colour="green-400"
-            question={questions[currentQuestionIndex].response.answers[2].text}
+            question={currentQuestion.response.answers[2]?.text || ""}
             onClick={() =>
               handleAnswerClick(
-                questions[currentQuestionIndex].response.answers[2].correct ===
-                  true
+                currentQuestion.response.answers[2]?.correct === true
               )
             }
           />
           <AnswerBox
             colour="blue-400"
-            question={questions[currentQuestionIndex].response.answers[3].text}
+            question={currentQuestion.response.answers[3]?.text || ""}
             onClick={() =>
               handleAnswerClick(
-                questions[currentQuestionIndex].response.answers[3].correct ===
-                  true
+                currentQuestion.response.answers[3]?.correct === true
               )
             }
           />
         </div>
-        <div>Score {score}</div>
+        <div>Score: {score}</div>
       </div>
     </>
   );
