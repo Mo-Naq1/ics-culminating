@@ -13,15 +13,18 @@ type QuizResponse = {
     }[];
   };
 }[];
+
 function App() {
   const [score, setScore] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<QuizResponse>([]);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [gameover, setGameOver] = useState("intro");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number | undefined>(undefined);
   const [topic, setTopic] = useState("General");
   const [difficulty, setDifficulty] = useState("easy");
+  const [showWrongMessage, setShowWrongMessage] = useState(false);
+  const [showCorrectMessage, setShowCorrectMessage] = useState(false);
   const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
   const fetchAIContent = async () => {
@@ -75,7 +78,17 @@ function App() {
   };
 
   const handleAnswerClick = (correct: boolean) => {
-    if (correct) setScore((prev) => prev + 1);
+    if (correct) {
+      setScore((prev) => prev + 1);
+      setShowCorrectMessage(true);
+      setShowWrongMessage(false);
+      setTimeout(() => setShowCorrectMessage(false), 1000);
+    } else {
+      setShowWrongMessage(true);
+      setTimeout(() => setShowWrongMessage(false), 1000);
+      setShowCorrectMessage(false);
+
+    }
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
@@ -199,7 +212,18 @@ function App() {
             }
           />
         </div>
+        
         <div>Score: {score}</div>
+        {showWrongMessage && (
+          <div className="text-red-500 text-3xl font-bold text-center mt-5">
+            Wrong!
+          </div>
+        )}
+        {showCorrectMessage && (
+          <div className="text-green-500 text-3xl font-bold text-center mt-5">
+            Correct!
+          </div>
+        )}
       </div>
     </>
   );
