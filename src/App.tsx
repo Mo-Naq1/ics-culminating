@@ -61,7 +61,10 @@ function App() {
         ],
         generationConfig: {
           maxOutputTokens: 8964,
+
           temperature: 1.0,
+          temperature: 0.7,
+
         },
       });
 
